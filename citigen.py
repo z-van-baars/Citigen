@@ -114,19 +114,17 @@ class City(object):
             len(self.dela.simplices)))
 
     def get_edge_regions(self):
-        edge_regions = []
+        edge_region_coordinates = []
         i = 0
         for simplex in self.dela.neighbors:
             if -1 not in simplex:
                 continue
-            for point in self.dela.simplices[i]:
-                print(self.dela.points[point])
-                assert point <= 1500
-                edge_regions.append(point)
+            # print(simplex)
+            for point in self.dela.points[self.dela.simplices[i]]:
+                edge_region_coordinates.append(point)
             i += 1
-        edge_regions_no_duplicates = list(dict.fromkeys(edge_regions))
-        edge_region_coordinates = [
-            self.dela.points[x] for x in edge_regions_no_duplicates]
+        for coord in edge_region_coordinates:
+            print(coord)
         return edge_region_coordinates
 
 
@@ -263,37 +261,40 @@ def render_image(image_size, city):
     # render each point's neighbor vertex in green --------------------------------------------------------------------#
 
     # render each border region in green ------------------------------------------------------------------------------#
-
-    for edge_region in city.get_edge_regions():
-        print("New Edge Polygon")
-        # print(edge_region)
+    for edge_region in city.edge_regions:
+        region_index = coordinates_to_region_index(city.vor, edge_region)
+        # print("New Edge Polygon")
         adjusted_polygon_points = []
-        region_index = 0
-        for xy_pair in city.vor.points:
-            region_index += 1
-            if xy_pair[0] != edge_region[0] or xy_pair[1] != edge_region[1]:
-                continue
-
-        # print(city.vor.regions[edge_region])
         if len(city.vor.regions[region_index]) < 3:
-            print("skipped polygon A")
+            # print("skipped polygon A")
             continue
-        # print(city.vor.regions[edge_region])
         for each_point in city.vor.regions[region_index]:
-            if each_point > 1500:
-                print("skipped polygon B")
+            if each_point > city.size * 3:
+                # print("skipped polygon B")
                 continue
             xy_pair = city.vor.vertices[each_point]
-            print(xy_pair)
+            # print(xy_pair)
             adjusted_polygon_points.append((xy_pair[0] + offset, xy_pair[1] + offset))
         if len(adjusted_polygon_points) < 3:
-            print("skipped polygon C")
+            # print("skipped polygon C")
             continue
+
         pygame.gfxdraw.filled_polygon(
             render_surface,
             adjusted_polygon_points,
             (10, 225, 10))
+
     return render_surface
+
+
+def coordinates_to_region_index(voronoi_object, coordinates):
+    vor = voronoi_object
+    xy1 = coordinates
+    region_index = 0
+    for xy2 in vor.points:
+        if xy2[0] == xy1[0] and xy2[1] == xy1[1]:
+            return region_index
+        region_index += 1
 
 
 def display_update(city_map_image):
@@ -320,4 +321,8 @@ while True:
                 new_city.vor = Voronoi(new_city.points)
                 city_map_image = render_image(500, new_city)
                 new_city.edge_regions = new_city.get_edge_regions()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos_adj = (mouse_pos[0] - 250, mouse_pos[1] - 250)
+            print(mouse_pos_adj)
     display_update(city_map_image)
