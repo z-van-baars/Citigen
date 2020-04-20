@@ -87,7 +87,8 @@ class City(object):
 
     def cull_points(self):
         def is_within_borders(point):
-            return (-self.size <= point[0] < self.size and -self.size <= point[1] < self.size)
+            return (-self.size <= point[0] < self.size and
+                    -self.size <= point[1] < self.size)
         interior_points = []
         for point in self.points:
             if is_within_borders(point):
@@ -126,15 +127,18 @@ class City(object):
             if -1 in simplex_pts:
                 return True
             return False
-        edge_region_coordinates = []
+        edge_region_indices = []
         i = 0
         for simplex in self.dela.neighbors:
             if -1 not in simplex:
                 continue
-            # border_simplices = filter(is_edge(), self.dela.neighbors)
-            for point in self.vor.points[self.dela.simplices[i]]:
-                edge_region_coordinates.append(point)
+            for point_index in self.dela.simplices[i]:
+                edge_region_indices.append(point_index)
             i += 1
+        unique_edge_regions = list(dict.fromkeys(edge_region_indices))
+        edge_region_coordinates = []
+        for point_index in unique_edge_regions:
+            edge_region_coordinates.append(self.vor.points[point_index])
 
         print(len(edge_region_coordinates))
         return edge_region_coordinates
@@ -184,18 +188,22 @@ def segment_to_polygon_pts(pt_A, pt_B, thickness, offset):
     angle = math.atan2(pt_A[1] - pt_B[1], pt_A[0] - pt_B[0])
     center_pt = ((pt_A[0] + pt_B[0]) / 2., (pt_A[1] + pt_B[1]) / 2.)
     length = get_length(pt_A, pt_B)
-    UL = (center_pt[0] + (length / 2.) * math.cos(angle) - (thickness / 2.) * math.sin(angle) + offset,
-          center_pt[1] + (thickness / 2.) * math.cos(angle) + (length / 2.) * math.sin(angle) + offset)
-    UR = (center_pt[0] - (length / 2.) * math.cos(angle) - (thickness / 2.) * math.sin(angle) + offset,
-          center_pt[1] + (thickness / 2.) * math.cos(angle) - (length / 2.) * math.sin(angle) + offset)
-    BL = (center_pt[0] + (length / 2.) * math.cos(angle) + (thickness / 2.) * math.sin(angle) + offset,
-          center_pt[1] - (thickness / 2.) * math.cos(angle) + (length / 2.) * math.sin(angle) + offset)
-    BR = (center_pt[0] - (length / 2.) * math.cos(angle) + (thickness / 2.) * math.sin(angle) + offset,
-          center_pt[1] - (thickness / 2.) * math.cos(angle) - (length / 2.) * math.sin(angle) + offset)
-    # ((ax = pt_A[0] + offset,
-    #   ay = pt_A[1] + offset),
-    #  (bx = pt_B[0] + offset,
-    #   by = pt_B[1] + offset))
+    UL = (center_pt[0] + (length / 2.) * math.cos(angle) -
+          (thickness / 2.) * math.sin(angle) + offset,
+          center_pt[1] + (thickness / 2.) * math.cos(angle) +
+          (length / 2.) * math.sin(angle) + offset)
+    UR = (center_pt[0] - (length / 2.) * math.cos(angle) -
+          (thickness / 2.) * math.sin(angle) + offset,
+          center_pt[1] + (thickness / 2.) * math.cos(angle) -
+          (length / 2.) * math.sin(angle) + offset)
+    BL = (center_pt[0] + (length / 2.) * math.cos(angle) +
+          (thickness / 2.) * math.sin(angle) + offset,
+          center_pt[1] - (thickness / 2.) * math.cos(angle) +
+          (length / 2.) * math.sin(angle) + offset)
+    BR = (center_pt[0] - (length / 2.) * math.cos(angle) +
+          (thickness / 2.) * math.sin(angle) + offset,
+          center_pt[1] - (thickness / 2.) * math.cos(angle) -
+          (length / 2.) * math.sin(angle) + offset)
     return (UL, BL, BR, UR)
 
 
@@ -298,11 +306,17 @@ def render_image(image_size, city):
         # print("New Edge Polygon")
         adjusted_polygon_points = []
         for vertex_index in city.vor.regions[region_index]:
+            # Skip any corners off the edge
+            if vertex_index == -1:
+                continue
             xy_pair = city.vor.vertices[vertex_index]
             # print(xy_pair)
             adjusted_polygon_points.append((
                 xy_pair[0] + offset + margin,
                 xy_pair[1] + offset + margin))
+        # skip any polygons with fewer than 3 sides / corners
+        if len(adjusted_polygon_points) < 3:
+            continue
 
         pygame.gfxdraw.filled_polygon(
             render_surface,
