@@ -113,7 +113,9 @@ class City(object):
 
     def gen_random_pts(self):
         for i in range(int(self.size * 0.5)):
-            self.points.append(generate_coordinate_pair([-250, 250]))
+            self.points.append(generate_coordinate_pair([
+                int(-self.size * 0.5),
+                int(self.size * 0.5)]))
 
         self.vor = Voronoi(self.points)
         self.dela = Delaunay(self.points)
@@ -144,7 +146,39 @@ class City(object):
         return edge_region_coordinates
 
 
-def generate_new(image_size):
+    def get_edges_programmatic(self):
+        border_regions = []
+        for x in range(self.size):
+            distances_top = []
+            distances_bottom = []
+            print(len(self.points))
+            for each_point in self.points:
+                dist_t = get_length(each_point, (-int(self.size / 2) + x, -int(self.size / 2)))
+                dist_b = get_length(each_point, (-int(self.size / 2) + x, int(self.size)))
+                distances_top.append((dist_t, each_point))
+                distances_bottom.append((dist_b, each_point))
+            distances_top_sorted = sorted(distances_top, key=lambda d: d[1])
+            distances_bottom_sorted = sorted(distances_bottom, key=lambda d: d[1])
+            border_regions.append(distances_top_sorted[0][1])
+            border_regions.append(distances_bottom_sorted[0][1])
+        for y in range(self.size):
+            distances_left = []
+            distances_right = []
+            for each_point in self.points:
+                dist_l = get_length(each_point, (-int(self.size / 2), -int(self.size / 2) + y))
+                dist_r = get_length(each_point, (int(self.size / 2), -int(self.size / 2) + y))
+                distances_left.append((dist_l, each_point))
+                distances_right.append((dist_r, each_point))
+            distances_left_sorted = sorted(distances_left, key=lambda d: d[1])
+            distances_right_sorted = sorted(distances_right, key=lambda d: d[1])
+            border_regions.append(distances_left_sorted[0][1])
+            border_regions.append(distances_right_sorted[0][1])
+        print(len(border_regions))
+        return border_regions
+
+
+
+def generate_new(map_size, image_size):
     # Onrun junk
 
     # Unpack preset features if any
@@ -153,10 +187,10 @@ def generate_new(image_size):
     #  - Size
     #  - Terrain
 
-    new_city = City(image_size, 0)
+    new_city = City(map_size, 0)
     # generate random points
     new_city.gen_random_pts()
-    new_city.edge_regions = new_city.get_edge_regions()
+    new_city.edge_regions = new_city.get_edges_programmatic()
     # Choose Nodes for Main Roads
     # new_city.gen_main_roads()
 
@@ -240,19 +274,7 @@ def render_image(image_size, city):
                 segment_points,
                 (255, 255, 255))
 
-    # Edge Region detection code that is pretty garbage ---------------------------------------------------------------#
-    # print(city.edge_regions[0])
-    # edge_region = city.edge_regions[0]
-    # region_pts = []
-    # for vertex_index in edge_region:
-    #     if vertex_index != -1:
-    #         region_pts.append((city.vor.vertices[vertex_index][0] + offset + margin,
-    #                            city.vor.vertices[vertex_index][1] + offset + margin))
-    # pygame.gfxdraw.filled_polygon(render_surface, region_pts, (115, 32, 32))
 
-    # Render red dots for each centroid ----------------------------------------------------------------------------- #
-    for point in city.points:
-        render_surface.blit(point_image, [point[0] + offset + margin, point[1] + offset + margin])
 
     # Render each voronoi region polygon in white --------------------------------------------------------------------#
     for region in city.vor.regions:
@@ -298,10 +320,13 @@ def render_image(image_size, city):
             True,
             adjusted_simplex_points)
         i += 1
-    # render each point's neighbor vertex in green --------------------------------------------------------------------#
+    # Render red dots for each centroid ----------------------------------------------------------------------------- #
+    for point in city.points:
+        render_surface.blit(point_image, [point[0] + offset + margin, point[1] + offset + margin])
 
     # render each border region in green ------------------------------------------------------------------------------#
     for edge_region in city.edge_regions:
+        # print(edge_region)
         region_index = coordinates_to_region_index(city.vor, edge_region)
         # print("New Edge Polygon")
         adjusted_polygon_points = []
@@ -358,7 +383,7 @@ def display_update(city_map_image):
     clock.tick(60)
 
 
-new_city, city_map_image = generate_new(500)
+new_city, city_map_image = generate_new(500, 500)
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -371,7 +396,7 @@ while True:
                 new_city.cull_points()
                 new_city.vor = Voronoi(new_city.points)
                 new_city.dela = Delaunay(new_city.points)
-                new_city.edge_regions = new_city.get_edge_regions()
+                new_city.edge_regions = new_city.get_edges_programmatic()
                 city_map_image = render_image(500, new_city)
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
