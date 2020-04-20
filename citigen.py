@@ -85,6 +85,15 @@ class City(object):
         self.points = []
         self.vor = None
 
+    def cull_points(self):
+        def is_within_borders(point):
+            return (-self.size <= point[0] < self.size and -self.size <= point[1] < self.size)
+        interior_points = []
+        for point in self.points:
+            if is_within_borders(point):
+                interior_points.append(point)
+        self.points = interior_points
+
     def gen_main_roads(self):
         coordinate_range = [-100, 100]
         roads = []
@@ -102,29 +111,32 @@ class City(object):
         self.structures.roads = roads
 
     def gen_random_pts(self):
-        for i in range(int(self.size * 3)):
+        for i in range(int(self.size * 0.5)):
             self.points.append(generate_coordinate_pair([-250, 250]))
 
         self.vor = Voronoi(self.points)
         self.dela = Delaunay(self.points)
-        # print(self.dela.__dict__)
         print("Points: {0}, Vertices: {1}, Simplices: {2}".format(
             len(self.dela.points),
             len(self.dela.vertices),
             len(self.dela.simplices)))
 
     def get_edge_regions(self):
+        def is_edge(simplex_pts):
+            if -1 in simplex_pts:
+                return True
+            return False
         edge_region_coordinates = []
         i = 0
         for simplex in self.dela.neighbors:
             if -1 not in simplex:
                 continue
-            # print(simplex)
-            for point in self.dela.points[self.dela.simplices[i]]:
+            # border_simplices = filter(is_edge(), self.dela.neighbors)
+            for point in self.vor.points[self.dela.simplices[i]]:
                 edge_region_coordinates.append(point)
             i += 1
-        for coord in edge_region_coordinates:
-            print(coord)
+
+        print(len(edge_region_coordinates))
         return edge_region_coordinates
 
 
@@ -188,13 +200,16 @@ def segment_to_polygon_pts(pt_A, pt_B, thickness, offset):
 
 
 def render_image(image_size, city):
-    render_surface = pygame.Surface((image_size, image_size))
+    margin = 50
+    render_surface = pygame.Surface((image_size + margin * 2, image_size + margin * 2))
     render_surface.fill((10, 10, 10))
     # this moves all rendered points onto the visible surface area
     offset = int(city.size * 0.5)
 
     point_image = pygame.Surface((2, 2))
     point_image.fill((200, 20, 20))
+    edge_point_image = pygame.Surface((2, 2))
+    edge_point_image.fill((20, 230, 20))
     midpoint_image = pygame.Surface((2, 2))
     midpoint_image.fill((20, 200, 20))
 
@@ -209,7 +224,7 @@ def render_image(image_size, city):
             pt_A = road[prev_node][0]
             pt_B = road[node][0]
 
-            road_segments.append(segment_to_polygon_pts(pt_A, pt_B, 4, offset))
+            road_segments.append(segment_to_polygon_pts(pt_A, pt_B, 4, offset, margin))
         for segment_points in road_segments:
             pygame.gfxdraw.aapolygon(render_surface, segment_points, (255, 255, 255))
             pygame.gfxdraw.filled_polygon(
@@ -223,13 +238,13 @@ def render_image(image_size, city):
     # region_pts = []
     # for vertex_index in edge_region:
     #     if vertex_index != -1:
-    #         region_pts.append((city.vor.vertices[vertex_index][0] + offset,
-    #                            city.vor.vertices[vertex_index][1] + offset))
+    #         region_pts.append((city.vor.vertices[vertex_index][0] + offset + margin,
+    #                            city.vor.vertices[vertex_index][1] + offset + margin))
     # pygame.gfxdraw.filled_polygon(render_surface, region_pts, (115, 32, 32))
 
     # Render red dots for each centroid ----------------------------------------------------------------------------- #
     for point in city.points:
-        render_surface.blit(point_image, [point[0] + offset - 1, point[1] + offset - 1])
+        render_surface.blit(point_image, [point[0] + offset + margin, point[1] + offset + margin])
 
     # Render each voronoi region polygon in white --------------------------------------------------------------------#
     for region in city.vor.regions:
@@ -249,8 +264,8 @@ def render_image(image_size, city):
         adjusted_edge_points = []
         for edge_point in edge_points:
             adjusted_edge_points.append(
-                (edge_point[0] + offset,
-                 edge_point[1] + offset))
+                (edge_point[0] + offset + margin,
+                 edge_point[1] + offset + margin))
 
         # render a closed polygon for each voronoi region's points
         pygame.draw.aalines(
@@ -258,6 +273,23 @@ def render_image(image_size, city):
             (255, 255, 255),
             True,
             adjusted_edge_points)
+    # Render Each Delaunay Edge in Blue -------------------------------------------------------------------------------#
+    i = 0
+    for simplex in city.dela.simplices:
+        simplex_points = []
+        for point in city.vor.points[city.dela.simplices[i]]:
+            simplex_points.append(point)
+        adjusted_simplex_points = []
+        for simplex_point in simplex_points:
+            adjusted_simplex_points.append(
+                (simplex_point[0] + offset + margin,
+                 simplex_point[1] + offset + margin))
+        pygame.draw.aalines(
+            render_surface,
+            (100, 100, 255),
+            True,
+            adjusted_simplex_points)
+        i += 1
     # render each point's neighbor vertex in green --------------------------------------------------------------------#
 
     # render each border region in green ------------------------------------------------------------------------------#
@@ -265,35 +297,39 @@ def render_image(image_size, city):
         region_index = coordinates_to_region_index(city.vor, edge_region)
         # print("New Edge Polygon")
         adjusted_polygon_points = []
-        if len(city.vor.regions[region_index]) < 3:
-            # print("skipped polygon A")
-            continue
-        for each_point in city.vor.regions[region_index]:
-            if each_point > city.size * 3:
-                # print("skipped polygon B")
-                continue
-            xy_pair = city.vor.vertices[each_point]
+        for vertex_index in city.vor.regions[region_index]:
+            xy_pair = city.vor.vertices[vertex_index]
             # print(xy_pair)
-            adjusted_polygon_points.append((xy_pair[0] + offset, xy_pair[1] + offset))
-        if len(adjusted_polygon_points) < 3:
-            # print("skipped polygon C")
-            continue
+            adjusted_polygon_points.append((
+                xy_pair[0] + offset + margin,
+                xy_pair[1] + offset + margin))
 
         pygame.gfxdraw.filled_polygon(
             render_surface,
             adjusted_polygon_points,
-            (10, 225, 10))
+            (10, 225, 10, 110))
+
+    # Render Each Border Point in Green
+    for point in city.edge_regions:
+        x = point[0] + offset + margin
+        y = point[1] + offset + margin
+        # assert x >= 0 and x < image_size + margin * 2
+        # assert y >= 0 and y < image_size + margin * 2
+        render_surface.blit(
+            edge_point_image,
+            [x, y])
 
     return render_surface
 
 
 def coordinates_to_region_index(voronoi_object, coordinates):
     vor = voronoi_object
-    xy1 = coordinates
+    xy1 = tuple(coordinates)
     region_index = 0
-    for xy2 in vor.points:
+    for xyi in vor.point_region:
+        xy2 = tuple(vor.points[region_index])
         if xy2[0] == xy1[0] and xy2[1] == xy1[1]:
-            return region_index
+            return xyi
         region_index += 1
 
 
@@ -318,9 +354,11 @@ while True:
             if event.key == pygame.K_RETURN:
                 new_points = lloyd_relaxation(2, new_city.vor)
                 new_city.points = new_points
+                new_city.cull_points()
                 new_city.vor = Voronoi(new_city.points)
-                city_map_image = render_image(500, new_city)
+                new_city.dela = Delaunay(new_city.points)
                 new_city.edge_regions = new_city.get_edge_regions()
+                city_map_image = render_image(500, new_city)
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             mouse_pos_adj = (mouse_pos[0] - 250, mouse_pos[1] - 250)
