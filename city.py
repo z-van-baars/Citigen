@@ -1,6 +1,7 @@
 import random
 import util
 import time
+import render as rdr
 from scipy.spatial import Voronoi, Delaunay
 
 
@@ -136,7 +137,7 @@ class City(object):
                 inner_city_points.append(point)
             if util.get_length([0, 0], point) < outer_radius:
                 outer_city_points.append(point)
-        return outer_city_points, inner_city_points
+        return inner_city_points, outer_city_points
 
     def choose_center_plaza(self, map_size, size, inner_city_points):
         assert len(inner_city_points) > 1
@@ -151,10 +152,13 @@ class City(object):
         prev_node_index = util.coordinates_to_point_index(vor, start_point)
         new_road = [(start_point, None)]
         # incrementally path to end point, greedy first
+        print(start_point, end_point)
         while True:
             new_neighbors = util.get_neighbors(
                 dela,
                 prev_node_index)
+            assert len(new_neighbors) > 0
+
             # there's a bug here, it sometimes crashes
             # theories are that potentially point [0, 0] is being added to potential start points
             # or potentially the central plaza point is being added to potential start points
@@ -163,17 +167,21 @@ class City(object):
 
             # check which of our neighbors is the closest to the end point
             new_neighbor_distances = []
+            print("Cycling....")
             for new_neighbor in new_neighbors:
                 dist1 = util.get_length(
                     end_point,
                     vor.points[new_neighbor])
                 new_neighbor_distances.append((dist1, new_neighbor))
             new_node_index = sorted(new_neighbor_distances, key=lambda d: d[0])[0][1]
+            for each in sorted(new_neighbor_distances, key=lambda d: d[0]):
+                print(vor.points[each[1]])
 
             # pin the new node along the path and the previous node to the road nodes list
             new_road.append((vor.points[new_node_index],
                              vor.points[prev_node_index]))
             prev_node_index = new_node_index
+            print(vor.points[new_node_index], "Destination: {0}".format(end_point))
             if (
                 vor.points[new_node_index][0] == end_point[0] and
                 vor.points[new_node_index][1] == end_point[1]
@@ -202,10 +210,10 @@ class City(object):
                              major_roads,
                              vor,
                              dela,
-                             outer_radius,
                              inner_radius,
-                             outer_city_points,
-                             inner_city_points):
+                             outer_radius,
+                             inner_city_points,
+                             outer_city_points):
         print("Generating Minor Roads")
         start = time.time()
         major_road_nodes = []
@@ -226,13 +234,13 @@ class City(object):
         for r in range(n_minroads):
             start_point = random.choice(outer_city_points)
             # choose random end point for speed
-
             end_point = random.choice(available_end_nodes)
             new_road = self.generate_road(vor, dela, start_point, end_point)
             self.structures.minor_roads.append(new_road)
             for node in new_road:
                 minor_road_nodes.append(node[0])
                 all_road_nodes.append([0])
+
         end = time.time()
         print("Elapsed time: {0}s".format(round(end - start, 2)))
 
@@ -376,16 +384,19 @@ class City(object):
             self.map_size,
             gp.inner_radius,
             gp.outer_radius,)
+        util.quit_check()
         self.structures.center_plaza = self.choose_center_plaza(
             self.map_size,
             self.size,
             inner_city_points)
+        util.quit_check()
         self.generate_major_roads(
             gp.n_majroads,
             self.vor,
             self.dela,
             self.edge_regions,
             self.structures.center_plaza)
+        util.quit_check()
         self.generate_minor_roads(
             gp.n_minroads,
             self.structures.major_roads,
@@ -395,6 +406,7 @@ class City(object):
             gp.outer_radius,
             inner_city_points,
             outer_city_points)
+        util.quit_check()
         self.generate_fill_roads(
             gp.n_fillroads,
             self.structures.major_roads,
@@ -404,16 +416,19 @@ class City(object):
 
             inner_city_points,
             outer_city_points)
+        util.quit_check()
         self.extend_roads(
             self.structures.major_roads,
             self.structures.minor_roads,
             self.vor,
             self.dela)
+        util.quit_check()
         self.log_road_segments(
             self.vor,
             self.dela,
             self.structures.major_roads,
             self.structures.minor_roads)
+        util.quit_check()
         self.generate_buildings(
             self.vor,
             self.dela,

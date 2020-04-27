@@ -1,6 +1,7 @@
 import random
 import math
 import string
+import pygame
 
 
 CHARACTERS = (string.ascii_letters +
@@ -11,6 +12,7 @@ CHARACTERS = (string.ascii_letters +
 def generate_unique_key(length=8):
     """Returns a unique unicode key of length l, default=8"""
     return ''.join(random.sample(CHARACTERS, length))
+
 
 def generate_coordinate_pair(minmax):
     x = random.randrange(minmax[0], minmax[1])
@@ -45,9 +47,9 @@ def coordinates_to_point_index(voronoi_object, coordinates):
             return point_index
 
 
-def coord_list_match(list1, point1):
+def coord_list_match(list1, point_1):
     for point_2 in list1:
-        if point1[0] == point2[0] and point1[1] == point2[1]:
+        if point_1[0] == point_2[0] and point_1[1] == point_2[1]:
             return True
     return False
 
@@ -65,8 +67,7 @@ def get_neighbors(dela, vertex):
     a = dela.vertex_neighbor_vertices[0]
     b = dela.vertex_neighbor_vertices[1]
     # The indices of neighboring vertices of 'vertex' are indptr[indices['vertex']:indices['vertex'+1]].
-    return b[a[vertex] : a[vertex + 1]]
-
+    return b[a[vertex]: a[vertex + 1]]
 
 
 def get_length(pt_A, pt_B):
@@ -75,7 +76,7 @@ def get_length(pt_A, pt_B):
     b2 = (pt_A[1] - pt_B[1]) ** 2
     c2 = math.sqrt(a2 + b2)
     # reut
-    return c2
+    return round(c2, 3)
 
 
 def lloyd_relaxation(vor):
@@ -114,3 +115,9 @@ def lloyd_relaxation(vor):
     # assert len(relaxed_points) == len(vor.points)
     return relaxed_points
 
+
+def quit_check():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.display.quit()
+            pygame.quit()

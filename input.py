@@ -1,11 +1,11 @@
 import pygame
-from render import render_wait_screen
+import render as rdr
 
 
 def key_handler(state, event):
     if event.key == pygame.K_RETURN:
-        wait_screen = render_wait_screen(state.render_parameters)
-        display_update(
+        wait_screen = rdr.render_wait_screen(state.render_parameters)
+        rdr.display_update(
             state,
             state.screen,
             wait_screen,
@@ -55,7 +55,7 @@ def key_handler(state, event):
     else:
         print(pygame.key.name(event.key))
         return
-    state.city_map_image = render_image(
+    state.city_map_image = rdr.render_image(
         state.city,
         state.render_parameters)
 
@@ -65,7 +65,9 @@ def mousedown_handler(state, event):
     if left_click:
         print("event!")
         mouse_pos = pygame.mouse.get_pos()
-        mouse_pos_adj = (mouse_pos[0] - state.render_parameters.scroll_x, mouse_pos[1] - state.render_parameters.scroll_y)
+        mouse_pos_adj = (
+            mouse_pos[0] - state.render_parameters.scroll_x,
+            mouse_pos[1] - state.render_parameters.scroll_y)
         state.mouse_down = True
         state.drag_start = mouse_pos_adj
 
@@ -75,7 +77,7 @@ def mouseup_handler(state, event):
     state.drag_start = ()
 
 
-def input_handler(event):
+def input_handler(state):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.display.quit()
