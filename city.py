@@ -152,7 +152,6 @@ class City(object):
         prev_node_index = util.coordinates_to_point_index(vor, start_point)
         new_road = [(start_point, None)]
         # incrementally path to end point, greedy first
-        print(start_point, end_point)
         while True:
             new_neighbors = util.get_neighbors(
                 dela,
@@ -167,21 +166,16 @@ class City(object):
 
             # check which of our neighbors is the closest to the end point
             new_neighbor_distances = []
-            print("Cycling....")
             for new_neighbor in new_neighbors:
                 dist1 = util.get_length(
                     end_point,
                     vor.points[new_neighbor])
                 new_neighbor_distances.append((dist1, new_neighbor))
             new_node_index = sorted(new_neighbor_distances, key=lambda d: d[0])[0][1]
-            for each in sorted(new_neighbor_distances, key=lambda d: d[0]):
-                print(vor.points[each[1]])
-
             # pin the new node along the path and the previous node to the road nodes list
             new_road.append((vor.points[new_node_index],
                              vor.points[prev_node_index]))
             prev_node_index = new_node_index
-            print(vor.points[new_node_index], "Destination: {0}".format(end_point))
             if (
                 vor.points[new_node_index][0] == end_point[0] and
                 vor.points[new_node_index][1] == end_point[1]
@@ -216,14 +210,9 @@ class City(object):
                              outer_city_points):
         print("Generating Minor Roads")
         start = time.time()
-        major_road_nodes = []
-        minor_road_nodes = []
-        all_road_nodes = []
         available_end_nodes = []
         for road in major_roads:
             for node in road:
-                major_road_nodes.append(node[0])
-                all_road_nodes.append(node[0])
                 if util.get_length([0, 0], node[0]) < outer_radius:
                     available_end_nodes.append(node[0])
         assert len(available_end_nodes) > 0
@@ -237,9 +226,6 @@ class City(object):
             end_point = random.choice(available_end_nodes)
             new_road = self.generate_road(vor, dela, start_point, end_point)
             self.structures.minor_roads.append(new_road)
-            for node in new_road:
-                minor_road_nodes.append(node[0])
-                all_road_nodes.append([0])
 
         end = time.time()
         print("Elapsed time: {0}s".format(round(end - start, 2)))
@@ -255,7 +241,7 @@ class City(object):
         print("Generating Fill Roads")
         start = time.time()
         all_road_nodes = []
-        for road in major_roads:
+        for road in major_roads + minor_roads:
             for node in road:
                 all_road_nodes.append(node[0])
         for r in range(n_fillroads):

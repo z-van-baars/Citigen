@@ -81,8 +81,8 @@ class RenderParameters(object):
         self.render_plaza = False
         # Booleans for rendering map mesh junk
         self.mesh_mode = False
-        self.render_delaunay_tris = True
-        self.render_points = True
+        self.render_delaunay_tris = False
+        self.render_points = False
         self.render_edge_points = False
         self.render_region_borders = False
         self.render_filled_edge_regions = False

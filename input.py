@@ -12,6 +12,7 @@ def key_handler(state, event):
             [state.screen_width, state.screen_height],
             state.render_parameters.scroll_x,
             state.render_parameters.scroll_y)
+        state.city.initalize_blank_map()
         state.city.gen_random_pts()
         state.city.get_edge_regions()
 

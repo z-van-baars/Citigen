@@ -111,7 +111,7 @@ def generate_new(screen_dimensions, map_size, size, image_size):
 state = generate_new(
     [width, height],  # screen dimensions
     height - 20,  # map size in "tiles"
-    1,  # city size [1: village, 2: town, 3: city, 4: metro]
+    4,  # city size [1: village, 2: town, 3: city, 4: metro]
     height - 20)  # image size in pixels
 
 
