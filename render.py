@@ -76,7 +76,7 @@ class RenderParameters(object):
         self.scroll_y = 0
 
         # Booleans for pictorial rendering
-        self.render_buildings = False
+        self.render_buildings = True
         self.render_roads = True
         self.render_plaza = False
         # Booleans for rendering map mesh junk
@@ -281,43 +281,32 @@ def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
 
         # add the rendering points for the total road to the bag of road polygons to render
         road_segment_groups.append(road_segments)
-    # code for rendering minor roads with polygons - useful for larger map render sizes
-    # for road in city.structures.minor_roads:
-    #     road_segments = []
-    #     for node in road:
-    #         # don't try to render the first point in a segment
-    #         if node[1] is None:
-    #             continue
 
-    #         pt_A = node[0]
-    #         pt_B = node[1]
-
-    #         road_segments.append(segment_to_polygon_pts(pt_A, pt_B, 1, offset, margin))
-    #     road_segment_groups.append(road_segments)
     for road in city.structures.minor_roads:
         road_pts = []
         road_segments = []
         for node in road:
-            if zoom <= 1.2:
+            # switch code for rendering minor roads with polygons - useful for larger map render sizes
+            if zoom <= 1.4:
                 road_pts.append(
                     (int(node[0][0] * zoom) + offset + margin,
                      int(node[0][1] * zoom) + offset + margin))
-            else:
-                # don't try to render the first point in a segment
-                if node[1] is None:
-                    continue
+                continue
+            # don't try to render the first point in a segment
+            if node[1] is None:
+                continue
 
-                pt_A = node[0]
-                pt_B = node[1]
+            pt_A = node[0]
+            pt_B = node[1]
 
-                raw_pts = segment_to_polygon_pts(pt_A, pt_B, (2 / zoom))
-                segment_points = []
-                for raw_point in raw_pts:
-                    segment_points.append((int(raw_point[0] * zoom) + offset + margin,
-                                           int(raw_point[1] * zoom) + offset + margin))
-                road_segments.append(segment_points)
+            raw_pts = segment_to_polygon_pts(pt_A, pt_B, (2 / zoom))
+            segment_points = []
+            for raw_point in raw_pts:
+                segment_points.append((int(raw_point[0] * zoom) + offset + margin,
+                                       int(raw_point[1] * zoom) + offset + margin))
+            road_segments.append(segment_points)
         road_segment_groups.append(road_segments)
-        if zoom <= 1.2:
+        if zoom <= 1.4:
             pygame.draw.lines(
                 render_surface,
                 colors.minor_road[mesh_mode],

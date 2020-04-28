@@ -30,8 +30,10 @@ class GenerationParameters(object):
             min(int(city.size * 3), 10))
         nmr = city.size * 2 * city.map_size / 150
         self.n_minroads = random.randint(int(nmr / 3), int(nmr))
+        self.n_minroads = 100
         nfr = city.size ** 2 * city.map_size / 100
         self.n_fillroads = random.randint(int(nfr / 3), int(nfr))
+        self.n_fillroads = 0
         # max 100 -> % chance of taking an inefficient step on node creation
         self.road_curviness = 50
         self.river_curviness = 75
