@@ -55,7 +55,7 @@ class State(object):
             image_size)
         self.screen_width = screen_dimensions[0]
         self.screen_height = screen_dimensions[1]
-        self.city_map_image = pygame.Surface([image_size, image_size])
+        self.max_lod_image = pygame.Surface([image_size, image_size])
         self.cached_image = rdr.render_message_screen(screen_dimensions, "null")
         self.mouse_down = False
         self.drag_start = ()
@@ -105,12 +105,12 @@ def generate_new(screen_dimensions, map_size, size, image_size):
     # Low Density Block Polygons
     # Farmland Block Polygons
 
-    state.city_map_image = rdr.render_image(
+    state.max_lod_image = rdr.render_image(
         state.city,
         state.render_parameters)
     state.cached_image = rdr.rescale_map_image(
-        state.city_map_image,
-        state.city_map_image.get_width(),
+        state.max_lod_image,
+        state.max_lod_image.get_width(),
         state.render_parameters.scale)
     return state
 

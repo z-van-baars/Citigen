@@ -357,7 +357,7 @@ def render_image(city, render_parameters):
     render_surface.fill(colors.background[rp.mesh_mode])
     # this moves all rendered points onto the visible surface area
     # by default the coordinates will be inverted by half the image size
-    offset = int(rp.image_size * rp.lod * 0.5 + rp.margin) 
+    offset = int(rp.image_size * rp.lod * 0.5 + rp.margin)
 
     if rp.render_buildings:
         render_buildings(
@@ -443,40 +443,39 @@ def render_user_interface(screen, state):
             [state.screen_width - 290, 10 + 24 * i])
 
 
-
 def render_message_screen(screen_dimensions, message_string):
     message_screen = pygame.Surface(
         [screen_dimensions[0] - 300,
          screen_dimensions[1] - 20])
     message_screen.fill((20, 20, 20))
-    render_surface.blit(
+    message_screen.blit(
         gf.large_font.render(message_string,
                              True,
                              (205, 205, 205)),
         [20, 20])
 
-    return render_surface
+    return message_screen
 
 
 def rescale_map_image(max_lod_image, image_size, scale):
     scaled_map_image = pygame.Surface(
         [int(image_size * scale),
          int(image_size * scale)])
-    scaled_map_image = pygame.transform.smoothscale(max_lod_image,
+    scaled_map_image = pygame.transform.smoothscale(
+        max_lod_image,
         [int(image_size * scale),
          int(image_size * scale)])
     return scaled_map_image
 
 
 def display_update(state, screen, screen_dimensions, scroll_x, scroll_y):
-    rp = state.render_parameters
     # reset and wipe screen
     screen.fill(colors.bg_blue)
     preview_window = pygame.Surface(
         [screen_dimensions[0] - 300,
          screen_dimensions[1] - 20])
     preview_window.fill((20, 20, 20))
-    preview_window.blit(state.cached_map_image, [scroll_x, scroll_y])
+    preview_window.blit(state.cached_image, [scroll_x, scroll_y])
     screen.blit(preview_window, [0, 0])
     render_user_interface(screen, state)
     # close out and frame limit

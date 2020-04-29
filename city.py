@@ -1,7 +1,6 @@
 import random
 import util
 import time
-import render as rdr
 from scipy.spatial import Voronoi, Delaunay
 
 

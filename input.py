@@ -4,13 +4,12 @@ import render as rdr
 
 def key_handler(state, event):
     if event.key == pygame.K_RETURN:
-    state.cached_image = rdr.render_message_screen(
-        [state.screen_width, state.screen_height],
-        "Regenerating...")
+        state.cached_image = rdr.render_message_screen(
+            [state.screen_width, state.screen_height],
+            "Regenerating...")
         rdr.display_update(
             state,
             state.screen,
-            wait_screen,
             [state.screen_width, state.screen_height],
             state.render_parameters.scroll_x,
             state.render_parameters.scroll_y)
@@ -59,7 +58,7 @@ def key_handler(state, event):
     else:
         print(pygame.key.name(event.key))
         return
-    state.city_map_image = rdr.render_image(
+    state.max_lod_image = rdr.render_image(
         state.city,
         state.render_parameters)
 
@@ -74,9 +73,16 @@ def mousedown_handler(state, event):
         state.drag_start = mouse_pos_adj
     if event.button == 4:
         state.render_parameters.scale += 0.02
-        rdr.rescale_map_image(state.city_map_image)
+        state.cached_image = rdr.rescale_map_image(
+            state.max_lod_image,
+            state.max_lod_image.get_width(),
+            state.render_parameters.scale)
     if event.button == 5:
         state.render_parameters.scale -= 0.02
+        state.cached_image = rdr.rescale_map_image(
+            state.max_lod_image,
+            state.max_lod_image.get_width(),
+            state.render_parameters.scale)
 
 
 def mouseup_handler(state, event):
