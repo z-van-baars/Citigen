@@ -39,8 +39,8 @@ class Colors(object):
         (200, 200, 100),
         (200, 200, 100))
     plaza_fill = (
-        (255, 225, 255, 100),
-        (255, 225, 255, 100))
+        (255, 225, 255),
+        (255, 225, 255))
     edge_region_fill = (
         (10, 225, 10, 110),
         (10, 225, 10, 110))
@@ -80,7 +80,7 @@ class RenderParameters(object):
         self.scroll_y = 0
 
         # Booleans for pictorial rendering
-        self.render_rooftops = True
+        self.render_rooftops = False
         self.render_roads = True
         self.render_plaza = False
         # Booleans for rendering map mesh junk
@@ -316,6 +316,15 @@ def render_roads(render_surface, lod, city, offset, mesh_mode):
                 colors.minor_road[mesh_mode],
                 False,
                 road_pts)
+            # Bezier Curve Code
+            # doesn't work right now, I think the args aren't properly doc'ed
+            # for node in road_pts:
+            #     if node[1] is not None:
+            #         pygame.gfxdraw.bezier(
+            #             render_surface,
+            #             [node[0], node[1]],
+            #             6,
+            #             colors.minor_road[mesh_mode])
 
     for road_segments in road_segment_groups:
         for segment_points in road_segments:

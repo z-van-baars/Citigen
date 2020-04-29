@@ -20,6 +20,13 @@ def key_handler(state, event):
 
         state.city.relax_points()
         state.city.generate_structures(state.gen_parameters)
+        state.max_lod_image = rdr.render_image(
+            state.city,
+            state.render_parameters)
+        state.cached_image = rdr.rescale_map_image(
+            state.max_lod_image,
+            state.max_lod_image.get_width(),
+            state.render_parameters.scale)
     elif event.key == pygame.K_EQUALS:
 
         state.render_parameters.margin += 5
