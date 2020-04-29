@@ -10,15 +10,16 @@ class Structures(object):
 
     def initialize_all(self):
         self.major_roads = []
-        self.minor_roads = []  # list[list[tuple((int, int), (int, int))]]
-        self.center_plaza = []  # tuple(it, int)
-        self.plazas = []  #
+        self.minor_roads = []
+        self.center_plaza = []
+        self.small_plazas = []
         self.markets = []  #
         self.cathedrals = []  #
         self.castles = []  #
         self.docks = []  #
         self.wells = []  #
         self.guild_halls = []  #
+        self.core_locations = []
         self.farms = []  #
         self.building_simplices = []
         self.low_density_blocks = []  #
@@ -138,6 +139,35 @@ class City(object):
                 outer_city_points.append(point)
         return inner_city_points, outer_city_points
 
+    def generate_core(self, inner_city_points):
+        chosen_points = []
+
+        self.structures.center_plaza = self.choose_center_plaza(
+            self.map_size,
+            self.size,
+            inner_city_points)
+        chosen_points.append(self.structures.center_plaza)
+
+        cp_index = util.coordinates_to_point_index(
+            self.vor, self.structures.center_plaza)
+
+        self.structures.well = self.choose_well(
+            util.get_neighbors(
+                self.dela,
+                cp_index))
+
+        self.structures.small_plazas = []
+        for sp in range(3):
+            while True:
+                new_point = random.choice(inner_city_points)
+                if not util.coord_list_match(chosen_points, new_point):
+                    chosen_points.append(new_point)
+                    break
+            self.structures.small_plazas.append(new_point)
+        self.structures.core_locations += self.structures.small_plazas
+        self.structures.core_locations += [self.structures.well]
+        self.structures.core_locations += [self.structures.center_plaza]
+
     def choose_center_plaza(self, map_size, size, inner_city_points):
         assert len(inner_city_points) > 1
         center_plaza_radius = map_size * (0.05 + 0.01 * size)
@@ -146,6 +176,9 @@ class City(object):
             if center_plaza_radius >= util.get_length([0, 0], center_plaza):
                 break
         return center_plaza
+
+    def choose_well(self, plaza_neighbors):
+        return self.vor.points[random.choice(plaza_neighbors)]
 
     def generate_road(self, vor, dela, start_point, end_point):
         prev_node_index = util.coordinates_to_point_index(vor, start_point)
@@ -181,7 +214,7 @@ class City(object):
             ):
                 return new_road
 
-    def generate_major_roads(self, n_majroads, vor, dela, edge_regions, center_plaza):
+    def generate_major_roads(self, n_majroads, vor, dela, edge_regions, core_locations):
         edge_lists = [edge_regions.top,
                       edge_regions.bottom,
                       edge_regions.left,
@@ -195,7 +228,11 @@ class City(object):
             elif r <= 3:
                 edge_terminus = random.choice(edge_lists[r])
 
-            new_road = self.generate_road(vor, dela, center_plaza, edge_terminus)
+            new_road = self.generate_road(
+                vor,
+                dela,
+                random.choice(core_locations),
+                edge_terminus)
             self.structures.major_roads.append(new_road)
 
     def generate_minor_roads(self,
@@ -314,7 +351,7 @@ class City(object):
         self.road_segments = road_segments
         self.road_nodes = unique_road_nodes
 
-    def generate_buildings(self, vor, dela, road_segments, road_nodes):
+    def generate_blocks(self, vor, dela, road_segments, road_nodes):
         building_simplices = []
         for simplex in dela.simplices:
             is_building = False
@@ -369,19 +406,13 @@ class City(object):
             self.map_size,
             gp.inner_radius,
             gp.outer_radius,)
-        util.quit_check()
-        self.structures.center_plaza = self.choose_center_plaza(
-            self.map_size,
-            self.size,
-            inner_city_points)
-        util.quit_check()
+        self.generate_core(inner_city_points)
         self.generate_major_roads(
             gp.n_majroads,
             self.vor,
             self.dela,
             self.edge_regions,
-            self.structures.center_plaza)
-        util.quit_check()
+            self.structures.core_locations)
         self.generate_minor_roads(
             gp.n_minroads,
             self.structures.major_roads,
@@ -391,7 +422,6 @@ class City(object):
             gp.outer_radius,
             inner_city_points,
             outer_city_points)
-        util.quit_check()
         self.generate_fill_roads(
             gp.n_fillroads,
             self.structures.major_roads,
@@ -401,20 +431,17 @@ class City(object):
 
             inner_city_points,
             outer_city_points)
-        util.quit_check()
         self.extend_roads(
             self.structures.major_roads,
             self.structures.minor_roads,
             self.vor,
             self.dela)
-        util.quit_check()
         self.log_road_segments(
             self.vor,
             self.dela,
             self.structures.major_roads,
             self.structures.minor_roads)
-        util.quit_check()
-        self.generate_buildings(
+        self.generate_blocks(
             self.vor,
             self.dela,
             self.road_segments,

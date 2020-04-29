@@ -55,6 +55,9 @@ class Colors(object):
         pass
 
 
+rooftop_texture = pygame.image.load("art/rooftop.png").convert_alpha()
+
+
 class GameFonts(object):
     large_font = pygame.font.SysFont('Banschrift Light Semicondensed', 24, False, False)
     small_font = pygame.font.SysFont('Banschrift Light Semicondensed', 18, False, False)
@@ -77,12 +80,13 @@ class RenderParameters(object):
         self.scroll_y = 0
 
         # Booleans for pictorial rendering
-        self.render_buildings = True
+        self.render_rooftops = True
         self.render_roads = True
         self.render_plaza = False
         # Booleans for rendering map mesh junk
         self.mesh_mode = False
         self.render_delaunay_tris = False
+        self.render_buildings = False
         self.render_points = False
         self.render_edge_points = False
         self.render_region_borders = False
@@ -349,6 +353,43 @@ def render_buildings(render_surface, lod, city, offset, mesh_mode):
             color)
 
 
+def render_rooftops(render_surface, lod, city, offset):
+    def get_polygon_dims(polygon_pts):
+        top = 10000
+        left = 10000
+        bottom = 0
+        right = 0
+        for (x, y) in polygon_pts:
+            if x < left:
+                left = x
+            elif x > right:
+                right = 0
+            if y < top:
+                top = y
+            elif y > bottom:
+                bottom = y
+        return right - left, bottom - top
+
+    buildings = []
+    for (dense, simplex) in city.structures.building_simplices:
+        adjusted_polygon_points = []
+        for vertex in simplex:
+            xy_pair = city.dela.points[vertex]
+            adjusted_polygon_points.append((
+                int(xy_pair[0] * lod) + offset,
+                int(xy_pair[1] * lod) + offset))
+        buildings.append((dense, adjusted_polygon_points))
+    for (dense, polygon_pts) in buildings:
+        # width, height = get_polygon_dims(polygon_pts)
+        # new_texture = pygame.Surface([width, height])
+        pygame.gfxdraw.textured_polygon(
+            render_surface,
+            polygon_pts,
+            rooftop_texture,
+            0,
+            0)
+
+
 def render_image(city, render_parameters):
     rp = render_parameters
     render_surface = pygame.Surface(
@@ -366,6 +407,12 @@ def render_image(city, render_parameters):
             city,
             offset,
             rp.mesh_mode)
+    if rp.render_rooftops:
+        render_rooftops(
+            render_surface,
+            rp.lod,
+            city,
+            offset)
     if rp.render_roads:
         render_roads(
             render_surface,

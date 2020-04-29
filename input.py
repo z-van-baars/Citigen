@@ -54,7 +54,7 @@ def key_handler(state, event):
     elif event.key == pygame.K_r:
         state.render_parameters.scroll_y = 0
         state.render_parameters.scroll_x = 0
-        state.render_parameters.scale = 1.0
+        state.render_parameters.scale = 0.4
     else:
         print(pygame.key.name(event.key))
         return
