@@ -4,7 +4,9 @@ import render as rdr
 
 def key_handler(state, event):
     if event.key == pygame.K_RETURN:
-        wait_screen = rdr.render_wait_screen(state.render_parameters)
+    state.cached_image = rdr.render_message_screen(
+        [state.screen_width, state.screen_height],
+        "Regenerating...")
         rdr.display_update(
             state,
             state.screen,
@@ -34,10 +36,10 @@ def key_handler(state, event):
     elif event.key == pygame.K_m:
         state.render_parameters.toggle_mesh_mode()
     elif event.key == pygame.K_PERIOD:
-        state.render_parameters.zoom += 0.05
+        state.render_parameters.scale += 0.05
     elif event.key == pygame.K_COMMA:
-        state.render_parameters.zoom -= 0.05
-        state.render_parameters.zoom = max(state.render_parameters.zoom, 0.05)
+        state.render_parameters.scale -= 0.05
+        state.render_parameters.scale = max(state.render_parameters.scale, 0.05)
     elif event.key == pygame.K_LEFT:
         state.render_parameters.scroll_x += 10
         return
@@ -53,7 +55,7 @@ def key_handler(state, event):
     elif event.key == pygame.K_r:
         state.render_parameters.scroll_y = 0
         state.render_parameters.scroll_x = 0
-        state.render_parameters.zoom = 1.0
+        state.render_parameters.scale = 1.0
     else:
         print(pygame.key.name(event.key))
         return
@@ -63,15 +65,18 @@ def key_handler(state, event):
 
 
 def mousedown_handler(state, event):
-    left_click = pygame.mouse.get_pressed()[0]
-    if left_click:
-        print("event!")
+    if event.button == 1:
         mouse_pos = pygame.mouse.get_pos()
         mouse_pos_adj = (
             mouse_pos[0] - state.render_parameters.scroll_x,
             mouse_pos[1] - state.render_parameters.scroll_y)
         state.mouse_down = True
         state.drag_start = mouse_pos_adj
+    if event.button == 4:
+        state.render_parameters.scale += 0.02
+        rdr.rescale_map_image(state.city_map_image)
+    if event.button == 5:
+        state.render_parameters.scale -= 0.02
 
 
 def mouseup_handler(state, event):

@@ -71,7 +71,8 @@ class RenderParameters(object):
         self.image_size = image_size
 
         self.margin = 0
-        self.zoom = 1.0
+        self.lod = 3.0
+        self.scale = 0.4
         self.scroll_x = 0
         self.scroll_y = 0
 
@@ -119,18 +120,19 @@ def segment_to_polygon_pts(pt_A, pt_B, thickness):
     return (UL, BL, BR, UR)
 
 
-def render_points(render_surface, zoom, city, offset, margin, mesh_mode):
-    point_image = pygame.Surface((4, 4))
+def render_points(render_surface, lod, city, offset, mesh_mode):
+    point_image = pygame.Surface((1 * lod, 1 * lod))
     point_image.fill(colors.points[mesh_mode])
     # Render red dots for each centroid
     for point in city.points:
+        # -2 to recenter the points by half the width of the point image
         render_surface.blit(
             point_image,
-            [int(point[0] * zoom) + offset + margin - 2,
-             int(point[1] * zoom) + offset + margin - 2])
+            [int(point[0] * lod) + offset - 0.5 * lod,
+             int(point[1] * lod) + offset - 0.5 * lod])
 
 
-def render_region_borders(render_surface, zoom, city, offset, margin, mesh_mode):
+def render_region_borders(render_surface, lod, city, offset, mesh_mode):
     # Render each voronoi region polygon in white
     for region in city.vor.regions:
         # skip regions with fewer than 3 points or with points off the coordinate field (-1)
@@ -149,8 +151,8 @@ def render_region_borders(render_surface, zoom, city, offset, margin, mesh_mode)
         adjusted_edge_points = []
         for edge_point in edge_points:
             adjusted_edge_points.append(
-                (int(edge_point[0] * zoom) + offset + margin,
-                 int(edge_point[1] * zoom) + offset + margin))
+                (int(edge_point[0] * lod) + offset,
+                 int(edge_point[1] * lod) + offset))
 
         # render a closed polygon for each voronoi region's points
         pygame.draw.aalines(
@@ -160,7 +162,7 @@ def render_region_borders(render_surface, zoom, city, offset, margin, mesh_mode)
             adjusted_edge_points)
 
 
-def render_delaunay_edges(render_surface, zoom, city, offset, margin, mesh_mode):
+def render_delaunay_edges(render_surface, lod, city, offset, mesh_mode):
     # Render Each Delaunay Edge in Blue
     for i, simplex in enumerate(city.dela.simplices):
         simplex_points = []
@@ -169,8 +171,8 @@ def render_delaunay_edges(render_surface, zoom, city, offset, margin, mesh_mode)
         adjusted_simplex_points = []
         for simplex_point in simplex_points:
             adjusted_simplex_points.append(
-                (int(simplex_point[0] * zoom) + offset + margin,
-                 int(simplex_point[1] * zoom) + offset + margin))
+                (int(simplex_point[0] * lod) + offset,
+                 int(simplex_point[1] * lod) + offset))
         pygame.draw.aalines(
             render_surface,
             colors.delaunay_edges[mesh_mode],
@@ -178,23 +180,21 @@ def render_delaunay_edges(render_surface, zoom, city, offset, margin, mesh_mode)
             adjusted_simplex_points)
 
 
-def render_edge_points(render_surface, zoom, city, offset, margin, mesh_mode):
-    edge_point_image = pygame.Surface((4, 4))
+def render_edge_points(render_surface, lod, city, offset, mesh_mode):
+    edge_point_image = pygame.Surface((1 * lod, 1 * lod))
     edge_point_image.fill(colors.edge_points[mesh_mode])
 
     # Render Each Border Point in Green
     for point in city.edge_regions.all():
-        x = point[0] * zoom + offset + margin - 2
-        y = point[1] * zoom + offset + margin - 2
-        # assert x >= 0 and x < image_size + margin * 2
-        # assert y >= 0 and y < image_size + margin * 2
+        x = point[0] * lod + offset - 0.5 * lod
+        y = point[1] * lod + offset - 0.5 * lod
         render_surface.blit(
             edge_point_image,
             [int(x), int(y)])
 
 
-def render_plaza(render_surface, zoom, city, offset, margin, mesh_mode):
-    plaza_image = pygame.Surface((4, 4))
+def render_plaza(render_surface, lod, city, offset, mesh_mode):
+    plaza_image = pygame.Surface((1 * lod, 1 * lod))
     plaza_image.fill(colors.plaza[mesh_mode])
     region_index = util.coordinates_to_region_index(
         city.vor,
@@ -206,8 +206,8 @@ def render_plaza(render_surface, zoom, city, offset, margin, mesh_mode):
             continue
         xy_pair = city.vor.vertices[vertex_index]
         adjusted_polygon_points.append((
-            int(xy_pair[0] * zoom) + offset + margin,
-            int(xy_pair[1] * zoom) + offset + margin))
+            int(xy_pair[0] * lod) + offset,
+            int(xy_pair[1] * lod) + offset))
 
     pygame.gfxdraw.filled_polygon(
         render_surface,
@@ -215,11 +215,11 @@ def render_plaza(render_surface, zoom, city, offset, margin, mesh_mode):
         colors.plaza_fill[mesh_mode])
 
     render_surface.blit(plaza_image, [
-        int(city.structures.center_plaza[0] * zoom) + offset + margin - 2,
-        int(city.structures.center_plaza[1] * zoom) + offset + margin - 2])
+        int(city.structures.center_plaza[0] * lod) + offset - 0.5 * lod,
+        int(city.structures.center_plaza[1] * lod) + offset - 0.5 * lod])
 
 
-def render_filled_edge_regions(render_surface, zoom, city, offset, margin, mesh_mode):
+def render_filled_edge_regions(render_surface, lod, city, offset, mesh_mode):
     # render each border region in green
     for edge_region in city.edge_regions.all():
         region_index = util.coordinates_to_region_index(city.vor, edge_region)
@@ -230,8 +230,8 @@ def render_filled_edge_regions(render_surface, zoom, city, offset, margin, mesh_
                 continue
             xy_pair = city.vor.vertices[vertex_index]
             adjusted_polygon_points.append((
-                int(xy_pair[0] * zoom) + offset + margin,
-                int(xy_pair[1] * zoom) + offset + margin))
+                int(xy_pair[0] * lod) + offset,
+                int(xy_pair[1] * lod) + offset))
         # skip any polygons with fewer than 3 sides / corners
         if len(adjusted_polygon_points) < 3:
             continue
@@ -242,7 +242,7 @@ def render_filled_edge_regions(render_surface, zoom, city, offset, margin, mesh_
             colors.edge_region_fill[mesh_mode])
 
 
-def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
+def render_roads(render_surface, lod, city, offset, mesh_mode):
     # Render Roads as adjustable pxl width polygons
     road_segment_groups = []
     for road in city.structures.major_roads:
@@ -255,11 +255,11 @@ def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
             pt_A = node[0]
             pt_B = node[1]
 
-            raw_pts = segment_to_polygon_pts(pt_A, pt_B, (4 / zoom))
+            raw_pts = segment_to_polygon_pts(pt_A, pt_B, (4 / lod))
             segment_points = []
             for raw_point in raw_pts:
-                segment_points.append((int(raw_point[0] * zoom) + offset + margin,
-                                       int(raw_point[1] * zoom) + offset + margin))
+                segment_points.append((int(raw_point[0] * lod) + offset,
+                                       int(raw_point[1] * lod) + offset))
             road_segments.append(segment_points)
         # append a final fake rendering node to make it seem like the roads go off the edge of the map
         pt_A = road[-1][0]
@@ -272,11 +272,11 @@ def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
             pt_B = (-int(city.map_size * 0.5), pt_A[1] + random.randint(-10, 10))
         elif closest_edge == 3:
             pt_B = (int(city.map_size * 0.5), pt_A[1] + random.randint(-10, 10))
-        raw_pts = segment_to_polygon_pts(pt_A, pt_B, (4 / zoom))
+        raw_pts = segment_to_polygon_pts(pt_A, pt_B, (4 / lod))
         segment_points = []
         for raw_point in raw_pts:
-            segment_points.append((int(raw_point[0] * zoom) + offset + margin,
-                                   int(raw_point[1] * zoom) + offset + margin))
+            segment_points.append((int(raw_point[0] * lod) + offset,
+                                   int(raw_point[1] * lod) + offset))
         road_segments.append(segment_points)
 
         # add the rendering points for the total road to the bag of road polygons to render
@@ -287,10 +287,10 @@ def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
         road_segments = []
         for node in road:
             # switch code for rendering minor roads with polygons - useful for larger map render sizes
-            if zoom <= 1.4:
+            if lod <= 1.5:
                 road_pts.append(
-                    (int(node[0][0] * zoom) + offset + margin,
-                     int(node[0][1] * zoom) + offset + margin))
+                    (int(node[0][0] * lod) + offset,
+                     int(node[0][1] * lod) + offset))
                 continue
             # don't try to render the first point in a segment
             if node[1] is None:
@@ -299,14 +299,14 @@ def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
             pt_A = node[0]
             pt_B = node[1]
 
-            raw_pts = segment_to_polygon_pts(pt_A, pt_B, (2 / zoom))
+            raw_pts = segment_to_polygon_pts(pt_A, pt_B, (2 / lod))
             segment_points = []
             for raw_point in raw_pts:
-                segment_points.append((int(raw_point[0] * zoom) + offset + margin,
-                                       int(raw_point[1] * zoom) + offset + margin))
+                segment_points.append((int(raw_point[0] * lod) + offset,
+                                       int(raw_point[1] * lod) + offset))
             road_segments.append(segment_points)
         road_segment_groups.append(road_segments)
-        if zoom <= 1.4:
+        if lod <= 1.5:
             pygame.draw.lines(
                 render_surface,
                 colors.minor_road[mesh_mode],
@@ -325,15 +325,15 @@ def render_roads(render_surface, zoom, city, offset, margin, mesh_mode):
                 colors.major_road[mesh_mode])
 
 
-def render_buildings(render_surface, zoom, city, offset, margin, mesh_mode):
+def render_buildings(render_surface, lod, city, offset, mesh_mode):
     buildings = []
     for (dense, simplex) in city.structures.building_simplices:
         adjusted_polygon_points = []
         for vertex in simplex:
             xy_pair = city.dela.points[vertex]
             adjusted_polygon_points.append((
-                int(xy_pair[0] * zoom) + offset + margin,
-                int(xy_pair[1] * zoom) + offset + margin))
+                int(xy_pair[0] * lod) + offset,
+                int(xy_pair[1] * lod) + offset))
         buildings.append((dense, adjusted_polygon_points))
     for (dense, polygon_pts) in buildings:
         color = colors.low_density[mesh_mode]
@@ -349,81 +349,63 @@ def render_buildings(render_surface, zoom, city, offset, margin, mesh_mode):
             color)
 
 
-def render_wait_screen(render_parameters):
-
-    rp = render_parameters
-    render_surface = pygame.Surface(
-        [int(rp.image_size * rp.zoom + rp.margin * 2),
-         int(rp.image_size * rp.zoom + rp.margin * 2)])
-    render_surface.fill((20, 20, 20))
-    wait_stamp = gf.large_font.render("Generating... ...", True, (205, 205, 205))
-    render_surface.blit(wait_stamp, [20, 20])
-
-    return render_surface
-
-
 def render_image(city, render_parameters):
     rp = render_parameters
     render_surface = pygame.Surface(
-        [int(rp.image_size * rp.zoom + rp.margin * 2),
-         int(rp.image_size * rp.zoom + rp.margin * 2)])
+        [int(rp.image_size * rp.lod + rp.margin * 2),
+         int(rp.image_size * rp.lod + rp.margin * 2)])
     render_surface.fill(colors.background[rp.mesh_mode])
     # this moves all rendered points onto the visible surface area
-    offset = int(rp.image_size * rp.zoom * 0.5)
+    # by default the coordinates will be inverted by half the image size
+    offset = int(rp.image_size * rp.lod * 0.5 + rp.margin) 
 
     if rp.render_buildings:
         render_buildings(
             render_surface,
-            rp.zoom,
+            rp.lod,
             city,
             offset,
-            rp.margin,
             rp.mesh_mode)
     if rp.render_roads:
         render_roads(
             render_surface,
-            rp.zoom,
+            rp.lod,
             city,
             offset,
-            rp.margin,
             rp.mesh_mode)
     if rp.render_plaza:
         render_plaza(
             render_surface,
-            rp.zoom,
+            rp.lod,
             city,
             offset,
-            rp.margin,
             rp.mesh_mode)
     if rp.render_delaunay_tris:
         render_delaunay_edges(
             render_surface,
-            rp.zoom,
+            rp.lod,
             city,
             offset,
-            rp.margin,
             rp.mesh_mode)
     if rp.render_points:
         render_points(
-            render_surface, rp.zoom, city, offset, rp.margin, rp.mesh_mode)
+            render_surface, rp.lod, city, offset, rp.mesh_mode)
     if rp.render_edge_points:
         render_edge_points(
-            render_surface, rp.zoom, city, offset, rp.margin, rp.mesh_mode)
+            render_surface, rp.lod, city, offset, rp.mesh_mode)
     if rp.render_region_borders:
         render_region_borders(
             render_surface,
-            rp.zoom,
+            rp.lod,
             city,
             offset,
-            rp.margin,
             rp.mesh_mode)
     if rp.render_filled_edge_regions:
         render_filled_edge_regions(
             render_surface,
-            rp.zoom,
+            rp.lod,
             city,
             offset,
-            rp.margin,
             rp.mesh_mode)
 
     return render_surface
@@ -461,15 +443,40 @@ def render_user_interface(screen, state):
             [state.screen_width - 290, 10 + 24 * i])
 
 
-def display_update(state, screen, city_map_image, screen_dimensions, scroll_x, scroll_y):
+
+def render_message_screen(screen_dimensions, message_string):
+    message_screen = pygame.Surface(
+        [screen_dimensions[0] - 300,
+         screen_dimensions[1] - 20])
+    message_screen.fill((20, 20, 20))
+    render_surface.blit(
+        gf.large_font.render(message_string,
+                             True,
+                             (205, 205, 205)),
+        [20, 20])
+
+    return render_surface
+
+
+def rescale_map_image(max_lod_image, image_size, scale):
+    scaled_map_image = pygame.Surface(
+        [int(image_size * scale),
+         int(image_size * scale)])
+    scaled_map_image = pygame.transform.smoothscale(max_lod_image,
+        [int(image_size * scale),
+         int(image_size * scale)])
+    return scaled_map_image
+
+
+def display_update(state, screen, screen_dimensions, scroll_x, scroll_y):
+    rp = state.render_parameters
     # reset and wipe screen
     screen.fill(colors.bg_blue)
-    scaled_map_image = city_map_image
     preview_window = pygame.Surface(
         [screen_dimensions[0] - 300,
          screen_dimensions[1] - 20])
     preview_window.fill((20, 20, 20))
-    preview_window.blit(scaled_map_image, [scroll_x, scroll_y])
+    preview_window.blit(state.cached_map_image, [scroll_x, scroll_y])
     screen.blit(preview_window, [0, 0])
     render_user_interface(screen, state)
     # close out and frame limit

@@ -56,6 +56,7 @@ class State(object):
         self.screen_width = screen_dimensions[0]
         self.screen_height = screen_dimensions[1]
         self.city_map_image = pygame.Surface([image_size, image_size])
+        self.cached_image = rdr.render_message_screen(screen_dimensions, "null")
         self.mouse_down = False
         self.drag_start = ()
 
@@ -64,11 +65,12 @@ def generate_new(screen_dimensions, map_size, size, image_size):
     # Onrun junk
     state = State(screen_dimensions, map_size, size, image_size)
 
-    wait_screen = rdr.render_wait_screen(state.render_parameters)
+    state.cached_image = rdr.render_message_screen(
+        [state.screen_width, state.screen_height],
+        "Generating...")
     rdr.display_update(
         state,
         state.screen,
-        wait_screen,
         [state.screen_width, state.screen_height],
         state.render_parameters.scroll_x,
         state.render_parameters.scroll_y)
@@ -106,6 +108,10 @@ def generate_new(screen_dimensions, map_size, size, image_size):
     state.city_map_image = rdr.render_image(
         state.city,
         state.render_parameters)
+    state.cached_image = rdr.rescale_map_image(
+        state.city_map_image,
+        state.city_map_image.get_width(),
+        state.render_parameters.scale)
     return state
 
 
@@ -113,7 +119,7 @@ def generate_new(screen_dimensions, map_size, size, image_size):
 state = generate_new(
     [width, height],  # screen dimensions
     height - 20,  # map size in "tiles"
-    4,  # city size [1: village, 2: town, 3: city, 4: metro]
+    3,  # city size [1: village, 2: town, 3: city, 4: metro]
     height - 20)  # image size in pixels
 
 
@@ -128,7 +134,6 @@ while True:
     rdr.display_update(
         state,
         state.screen,
-        state.city_map_image,
         [state.screen_width, state.screen_height],
         state.render_parameters.scroll_x,
         state.render_parameters.scroll_y)
